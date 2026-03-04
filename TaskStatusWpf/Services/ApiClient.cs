@@ -116,6 +116,39 @@ public sealed class ApiClient
 
         return new ApiException(status, "Request failed", $"HTTP {status}", raw);
     }
+
+    public async Task<IReadOnlyList<TaskListItemResponse>> GetProjectTasksAsync(int projectId, CancellationToken ct = default)
+    {
+        using var res = await _http.GetAsync($"api/v1/projects/{projectId}/tasks", ct);
+        if (!res.IsSuccessStatusCode)
+            throw await ToApiExceptionAsync(res, ct);
+
+        var body = await res.Content.ReadAsStringAsync(ct);
+        return JsonSerializer.Deserialize<List<TaskListItemResponse>>(body, _json) ?? new();
+    }
+
+    public async Task<TaskDetailResponse> GetTaskAsync(int taskId, CancellationToken ct = default)
+    {
+        using var res = await _http.GetAsync($"api/v1/tasks/{taskId}", ct);
+        if (!res.IsSuccessStatusCode)
+            throw await ToApiExceptionAsync(res, ct);
+
+        var body = await res.Content.ReadAsStringAsync(ct);
+        return JsonSerializer.Deserialize<TaskDetailResponse>(body, _json)
+               ?? throw new ApiException((int)res.StatusCode, "Parse failed", "Failed to parse /tasks/{taskId} response.");
+    }
+
+    /// <summary>
+    /// CSVを文字列で取得（必要ならファイル保存は呼び出し側で）
+    /// </summary>
+    public async Task<string> GetProjectTasksCsvAsync(int projectId, CancellationToken ct = default)
+    {
+        using var res = await _http.GetAsync($"api/v1/reports/projects/{projectId}/tasks.csv", ct);
+        if (!res.IsSuccessStatusCode)
+            throw await ToApiExceptionAsync(res, ct);
+
+        return await res.Content.ReadAsStringAsync(ct);
+    }
 }
 
 public sealed class ApiException : Exception

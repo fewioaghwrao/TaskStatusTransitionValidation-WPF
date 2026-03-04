@@ -1,4 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TaskStatusWpf.Services;
 
@@ -11,10 +13,59 @@ public sealed partial class LoginViewModel : ObservableObject
 
     public event Action? LoginSucceeded;
 
-    [ObservableProperty] private string email = "";
-    [ObservableProperty] private string password = "";
-    [ObservableProperty] private bool isBusy;
+    // 入力が変わったら LoginCommand の活性/非活性を更新
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    private string email = "";
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    private string password = "";
+
+    // Busy が変わったら LoginCommand の活性/非活性を更新
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    private bool isBusy;
+
     [ObservableProperty] private string? errorMessage;
+
+    [ObservableProperty] private bool isPasswordVisible;
+
+    public string PasswordToggleText => IsPasswordVisible ? "非表示" : "表示";
+    partial void OnIsPasswordVisibleChanged(bool value)
+        => OnPropertyChanged(nameof(PasswordToggleText));
+
+    // ✅ 必須入力チェック（超最低限）
+    public bool CanLogin =>
+        !IsBusy &&
+        !string.IsNullOrWhiteSpace(Email) &&
+        !string.IsNullOrWhiteSpace(Password);
+
+    // ✅ 必須メッセージ（簡易）
+    public string? EmailValidationMessage =>
+        string.IsNullOrWhiteSpace(Email) ? "メールアドレスは必須です" : null;
+
+    public string? PasswordValidationMessage =>
+        string.IsNullOrWhiteSpace(Password) ? "パスワードは必須です" : null;
+
+    public bool HasEmailError => EmailValidationMessage != null;
+    public bool HasPasswordError => PasswordValidationMessage != null;
+
+    partial void OnEmailChanged(string value)
+    {
+        OnPropertyChanged(nameof(EmailValidationMessage));
+        OnPropertyChanged(nameof(HasEmailError));
+    }
+
+    partial void OnPasswordChanged(string value)
+    {
+        OnPropertyChanged(nameof(PasswordValidationMessage));
+        OnPropertyChanged(nameof(HasPasswordError));
+    }
+
+    [RelayCommand]
+    private void TogglePasswordVisibility()
+        => IsPasswordVisible = !IsPasswordVisible;
 
     public LoginViewModel(ApiClient api, AppSession session)
     {
@@ -22,7 +73,8 @@ public sealed partial class LoginViewModel : ObservableObject
         _session = session;
     }
 
-    [RelayCommand]
+    // ✅ CanExecute を使う：ボタンが自動でDisableになる
+    [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
     {
         ErrorMessage = null;
@@ -39,13 +91,26 @@ public sealed partial class LoginViewModel : ObservableObject
 
             LoginSucceeded?.Invoke();
         }
-        catch (Exception ex)
+        catch
         {
-            ErrorMessage = ex.Message;
+            // ユーザー向け（詳細は後でログへ）
+            ErrorMessage = "ログインに失敗しました。メールアドレスまたはパスワードを確認してください。";
         }
         finally
         {
             IsBusy = false;
         }
     }
+
+    public bool IsNotBusy => !IsBusy;
+
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNotBusy));
+    }
+
+    public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
+
+    partial void OnErrorMessageChanged(string? value)
+        => OnPropertyChanged(nameof(HasError));
 }

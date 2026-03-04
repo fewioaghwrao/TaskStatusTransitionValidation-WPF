@@ -40,3 +40,23 @@ public sealed class ProblemDetailsDto
     // ValidationProblemDetailsの "errors"
     public Dictionary<string, string[]>? Errors { get; set; }
 }
+
+public sealed class TaskDetailResponse
+{
+    public int TaskId { get; set; }
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Status { get; set; } = "";
+
+    // もしAPIが返すなら（不要なら消してOK）
+    public int ProjectId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
+public sealed class TaskListItemResponse
+{
+    public int TaskId { get; set; }
+    public string Title { get; set; } = "";
+    public string Status { get; set; } = "";
+}

@@ -10,6 +10,13 @@ public sealed class AppSession
     public void SetToken(string token) => Token = token;
     public void SetMe(MeResponse me) => Me = me;
 
+    // ✅ 追加：ログアウト用
+    public void Clear()
+    {
+        Token = null;
+        Me = null;
+    }
+
     public bool IsLeader =>
         string.Equals(Me?.Role, "Leader", StringComparison.OrdinalIgnoreCase);
 }
