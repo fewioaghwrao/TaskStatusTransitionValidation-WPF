@@ -8,12 +8,11 @@ namespace TaskStatusWpf.ViewModels;
 
 public sealed partial class LoginViewModel : ObservableObject
 {
-    private readonly ApiClient _api;
+    private readonly IApiClient _api;   // ✅ 変更
     private readonly AppSession _session;
 
     public event Action? LoginSucceeded;
 
-    // 入力が変わったら LoginCommand の活性/非活性を更新
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
     private string email = "";
@@ -22,26 +21,22 @@ public sealed partial class LoginViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
     private string password = "";
 
-    // Busy が変わったら LoginCommand の活性/非活性を更新
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
     private bool isBusy;
 
     [ObservableProperty] private string? errorMessage;
-
     [ObservableProperty] private bool isPasswordVisible;
 
     public string PasswordToggleText => IsPasswordVisible ? "非表示" : "表示";
     partial void OnIsPasswordVisibleChanged(bool value)
         => OnPropertyChanged(nameof(PasswordToggleText));
 
-    // ✅ 必須入力チェック（超最低限）
     public bool CanLogin =>
         !IsBusy &&
         !string.IsNullOrWhiteSpace(Email) &&
         !string.IsNullOrWhiteSpace(Password);
 
-    // ✅ 必須メッセージ（簡易）
     public string? EmailValidationMessage =>
         string.IsNullOrWhiteSpace(Email) ? "メールアドレスは必須です" : null;
 
@@ -67,13 +62,12 @@ public sealed partial class LoginViewModel : ObservableObject
     private void TogglePasswordVisibility()
         => IsPasswordVisible = !IsPasswordVisible;
 
-    public LoginViewModel(ApiClient api, AppSession session)
+    public LoginViewModel(IApiClient api, AppSession session) // ✅ 変更
     {
         _api = api;
         _session = session;
     }
 
-    // ✅ CanExecute を使う：ボタンが自動でDisableになる
     [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
     {
@@ -93,7 +87,6 @@ public sealed partial class LoginViewModel : ObservableObject
         }
         catch
         {
-            // ユーザー向け（詳細は後でログへ）
             ErrorMessage = "ログインに失敗しました。メールアドレスまたはパスワードを確認してください。";
         }
         finally
@@ -105,9 +98,7 @@ public sealed partial class LoginViewModel : ObservableObject
     public bool IsNotBusy => !IsBusy;
 
     partial void OnIsBusyChanged(bool value)
-    {
-        OnPropertyChanged(nameof(IsNotBusy));
-    }
+        => OnPropertyChanged(nameof(IsNotBusy));
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 

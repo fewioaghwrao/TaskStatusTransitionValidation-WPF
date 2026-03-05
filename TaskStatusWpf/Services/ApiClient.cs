@@ -6,17 +6,24 @@ using TaskStatusWpf.Models;
 
 namespace TaskStatusWpf.Services;
 
-public sealed class ApiClient
+public sealed class ApiClient : IApiClient
 {
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _json;
 
+    // ✅ 既存互換：呼び出し側は new ApiClient(baseUrl) のままでOK
     public ApiClient(string baseUrl)
-    {
-        _http = new HttpClient
+        : this(new HttpClient
         {
             BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/")
-        };
+        })
+    {
+    }
+
+    // ✅ テスト用：HttpClientを注入できる
+    internal ApiClient(HttpClient http)
+    {
+        _http = http;
 
         _json = new JsonSerializerOptions
         {
@@ -80,43 +87,6 @@ public sealed class ApiClient
             ?? new List<ProjectListItemResponse>();
     }
 
-    private async Task<ApiException> ToApiExceptionAsync(HttpResponseMessage res, CancellationToken ct)
-    {
-        var status = (int)res.StatusCode;
-        var raw = await res.Content.ReadAsStringAsync(ct);
-
-        // まず ProblemDetails として読んでみる
-        try
-        {
-            var pd = JsonSerializer.Deserialize<ProblemDetailsDto>(raw, _json);
-            if (pd is not null)
-            {
-                // ValidationProblemDetails なら errors を優先整形
-                if (pd.Errors is not null && pd.Errors.Count > 0)
-                {
-                    var lines = pd.Errors
-                        .SelectMany(kv => kv.Value.Select(v => $"{kv.Key}: {v}"))
-                        .ToArray();
-                    var detail = string.Join(Environment.NewLine, lines);
-                    return new ApiException(status, pd.Title ?? "Validation failed", detail, raw);
-                }
-
-                return new ApiException(
-                    status,
-                    pd.Title ?? "Request failed",
-                    pd.Detail ?? $"HTTP {status}",
-                    raw
-                );
-            }
-        }
-        catch
-        {
-            // 解析できない場合は raw をそのまま
-        }
-
-        return new ApiException(status, "Request failed", $"HTTP {status}", raw);
-    }
-
     public async Task<IReadOnlyList<TaskListItemResponse>> GetProjectTasksAsync(int projectId, CancellationToken ct = default)
     {
         using var res = await _http.GetAsync($"api/v1/projects/{projectId}/tasks", ct);
@@ -138,9 +108,6 @@ public sealed class ApiClient
                ?? throw new ApiException((int)res.StatusCode, "Parse failed", "Failed to parse /tasks/{taskId} response.");
     }
 
-    /// <summary>
-    /// CSVを文字列で取得（必要ならファイル保存は呼び出し側で）
-    /// </summary>
     public async Task<string> GetProjectTasksCsvAsync(int projectId, CancellationToken ct = default)
     {
         using var res = await _http.GetAsync($"api/v1/reports/projects/{projectId}/tasks.csv", ct);
@@ -148,6 +115,40 @@ public sealed class ApiClient
             throw await ToApiExceptionAsync(res, ct);
 
         return await res.Content.ReadAsStringAsync(ct);
+    }
+
+    private async Task<ApiException> ToApiExceptionAsync(HttpResponseMessage res, CancellationToken ct)
+    {
+        var status = (int)res.StatusCode;
+        var raw = await res.Content.ReadAsStringAsync(ct);
+
+        try
+        {
+            var pd = JsonSerializer.Deserialize<ProblemDetailsDto>(raw, _json);
+            if (pd is not null)
+            {
+                if (pd.Errors is not null && pd.Errors.Count > 0)
+                {
+                    var lines = pd.Errors
+                        .SelectMany(kv => kv.Value.Select(v => $"{kv.Key}: {v}"))
+                        .ToArray();
+                    var detail = string.Join(Environment.NewLine, lines);
+                    return new ApiException(status, pd.Title ?? "Validation failed", detail, raw);
+                }
+
+                return new ApiException(
+                    status,
+                    pd.Title ?? "Request failed",
+                    pd.Detail ?? $"HTTP {status}",
+                    raw
+                );
+            }
+        }
+        catch
+        {
+        }
+
+        return new ApiException(status, "Request failed", $"HTTP {status}", raw);
     }
 }
 
