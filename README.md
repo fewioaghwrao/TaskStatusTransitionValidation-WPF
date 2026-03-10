@@ -1,6 +1,6 @@
 # 案件タスク管理 Lite（WPF Desktop Client）
 
-![CI](https://github.com/fewioaghwrao/TaskStatusTransitionValidation-WPF/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/fewioaghwrao/TaskStatusTransitionValidation-WPF/actions/workflows/razormock-ci.yml/badge.svg)
 
 > ASP.NET Core Web API を利用する **案件・タスク管理（Lite）の WPFデスクトップ版クライアント**です。  
 > API側で **状態遷移ルール・権限制御（Leader / Member）** を一元管理し、WPFはクライアントとして疎結合に構成しています。
