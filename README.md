@@ -15,13 +15,6 @@
 
 ---
 
-# Demo(バックエンドAPI)
-
-Backend API  
-https://taskstsv-be-cacjavgfebh2bucp.japaneast-01.azurewebsites.net/swagger/index.html
-
----
-
 # 🖥 スクリーンショット
 
 | 画面 | スクリーンショット |
@@ -43,12 +36,12 @@ https://taskstsv-be-cacjavgfebh2bucp.japaneast-01.azurewebsites.net/swagger/inde
 - バックエンドAPIが起動していること（ローカル or デモ）
 
 ## 設定ファイル
-`TaskStatusWpf/appsettings.json` を用意し、APIのBaseUrlを設定します。
+`TaskStatusWpf/appsettings.json` を用意し、APIのBaseUrlを設定します。(例)
 
 ```json
 {
   "Api": {
-    "BaseUrl": "https://taskstsv-be-cacjavgfebh2bucp.japaneast-01.azurewebsites.net"
+    "BaseUrl": "https://localhost:7039"
   }
 }
 ```
@@ -59,14 +52,18 @@ dotnet restore
 dotnet run
 ```
 
-## 動作確認（デモユーザー）
-Leader:
-- Email: demo1@example.com
-- Password: Demo1234!
+## 動作確認
 
-Member:
-- Email: demo2@example.com
-- Password: Demo1234!
+本クライアントを利用するには、バックエンドAPI側にログイン可能なユーザーが登録されている必要があります。  
+ローカル検証時は、バックエンド側で用意した初期データ（開発用ユーザー）を利用してください。
+
+確認手順:
+1. バックエンドAPIを起動
+2. 開発用ユーザーを投入した状態にする
+3. `TaskStatusWpf/appsettings.json` に API の BaseUrl を設定
+4. WPF クライアントを起動してログイン
+
+※ 利用する資格情報はローカル環境ごとに設定してください。
 
 ---
 
